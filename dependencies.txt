@@ -1,0 +1,4 @@
+https://nsis.sourceforge.io/LogEx_plug-in
+https://nsis.sourceforge.io/ZipDLL_plug-in
+https://nsis.sourceforge.io/Nsisunz_plug-in
+https://github.com/negrutiu/nsis-nscurl/releases/tag/v1.2024.1.13
