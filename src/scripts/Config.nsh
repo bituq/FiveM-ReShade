@@ -1,10 +1,10 @@
-!define RESHADE_VERSION "6.0.0"
-!define VERSION "1.0.1"
+!define RESHADE_VERSION "6.0.1"
+!define VERSION "1.0.2"
 !define MANUFACTURER "Dylan N"
 !define NAME "FiveM ReShade"
 !define UNINSTALLER "Uninstall Reshade for FiveM.exe"
 !define UPDATELINK "https://github.com/bituq/FiveRFX"
-!define GRAPHICSAPI "dxgi"
+!define GRAPHICSAPI "d3d11"
 !define HASHSTRINGEXE "..\..\hash_string\target\release\hash_string.exe"
 
 VIProductVersion "${VERSION}.0"
