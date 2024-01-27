@@ -16,22 +16,19 @@ BrandingText "${MANUFACTURER}"
 
 Function .onInit
     ; Initialize the log file
-    Var /GLOBAL logFile
     System::Call 'ole32::CoCreateGuid(g .s)'
-    pop $logFile
-    StrCpy $logFile "$TEMP\$logFile.log"
-    LogEx::Init "true" $logFile
-    DetailPrint "$logFile"
+    pop $0
+    LogEx::Init "true" "$TEMP\$0.log"
+    DetailPrint "$TEMP\$0.log"
 
     ; Locate the FiveM directory
-    Var /GLOBAL FiveMDir
-    ReadRegStr $FiveMDir HKCU "SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\CitizenFX_FiveM" "InstallLocation"
-    ${If} $FiveMDir == ""
+    ReadRegStr $0 HKCU "SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\CitizenFX_FiveM" "InstallLocation"
+    ${If} $0 == ""
         !insertmacro LogAndPrint "Unable to locate the FiveM directory."
-        MessageBox MB_ICONSTOP|MB_OK "Unable to locate the FiveM directory. Please ensure that FiveM is installed."
-        Abort
+        MessageBox MB_ICONSTOP|MB_OK "Unable to locate the FiveM directory. Please ensure that FiveM is installed." /SD IDOK
+        Quit
     ${Else}
-        !insertmacro LogAndPrint "FiveM directory located at: $FiveMDir"
+        !insertmacro LogAndPrint "FiveM directory located at: $0"
     ${EndIf}
 
     InitPluginsDir
@@ -39,71 +36,59 @@ FunctionEnd
 
 Section
     SetOutPath $PLUGINSDIR
-    File ${HASHSTRINGEXE} ; This utility is required to hash the COMPUTERNAME for the ini file later
-
-    Var /GLOBAL CitizenFXIni
-    StrCpy $CitizenFXIni "$FiveMDir\FiveM.app\CitizenFX.ini"
-
-    ExecWait '"$PLUGINSDIR\hash_string.exe" "$CitizenFXIni"'
+    File ${HASHSTRINGEXE}
 
     ; Locate GTA 5
-    Var /GLOBAL IVPath
-    ReadINIStr $IVPath "$CitizenFXIni" "Game" "IVPath"
-    IfFileExists "$IVPath\*.*" +5 0
-        MessageBox MB_ICONSTOP|MB_OK "Unable to locate GTA 5. Please ensure that GTA 5 is installed."
-        !insertmacro LogAndPrint "Unable to locate GTA5: $IVPath"
-        Abort
-
-    !insertmacro LogAndPrint "GTA 5 location: $IVPath"
+    ReadINIStr $0 "$0\FiveM.app\CitizenFX.ini" "Game" "IVPath"
+    IfFileExists "$0\*.*" +3
+        !insertmacro LogAndPrint "GTA 5 location: $0"
+    MessageBox MB_ICONSTOP|MB_OK "Unable to locate GTA 5. Please ensure that GTA 5 is installed." /SD IDOK
+    Quit
 
     ; Set the update channel to beta if needed
-    ReadINIStr $0 "$CitizenFXIni" "Game" "UpdateChannel"
-    ${If} $0 != "beta"
-        MessageBox MB_ICONEXCLAMATION|MB_YESNO "FiveM is required to be in the beta update channel. Set this automatically?" IDYES +2
-            Abort
-        WriteINIStr "$CitizenFXIni" "Game" "UpdateChannel" "beta"
+    ReadINIStr $1 "$0\FiveM.app\CitizenFX.ini" "Game" "UpdateChannel"
+    ${If} $1 != "beta"
+        MessageBox MB_ICONEXCLAMATION|MB_YESNO "FiveM is required to be in the beta update channel. Set this automatically?" /SD IDYES
+        WriteINIStr "$0\FiveM.app\CitizenFX.ini" "Game" "UpdateChannel" "beta"
         !insertmacro LogAndPrint "FiveM's update channel has been set to beta."
     ${EndIf}
 
-    ; Locate the plugins directory
-    Var /GLOBAL FiveMPlugins
-    StrCpy $FiveMPlugins "$FiveMDir\FiveM.app\plugins"
-	IfFileExists "$FiveMPlugins\*" +2 0
-        CreateDirectory "$FiveMPlugins"
-    !insertmacro LogAndPrint "Target directory: $FiveMPlugins"
+    ; Ensure the plugins directory exists
+    StrCpy $1 "$0\FiveM.app\plugins"
+    IfFileExists "$1\*" +2
+        CreateDirectory "$1"
+    !insertmacro LogAndPrint "Target directory: $1"
 
     CreateDirectory "$PLUGINSDIR\reshade"
 
     ; Download ReShade
     nscurl::http GET "https://reshade.me/downloads/ReShade_Setup_${RESHADE_VERSION}_Addon.exe" "$PLUGINSDIR\reshade\reshade.exe" /END
-    Pop $R0 ; Status
+    Pop $R0
     ${If} $R0 != "OK"
-        !insertmacro LogAndPrint "Failed to download ReShade: $0"
-        MessageBox MB_ICONSTOP|MB_OK "Failed to download ReShade: $R0"
-        Abort
+        !insertmacro LogAndPrint "Failed to download ReShade: $R0"
+        MessageBox MB_ICONSTOP|MB_OK "Failed to download ReShade: $R0" /SD IDOK
+        Quit
     ${EndIf}
 
-    !insertmacro LogAndPrint "Getting ReShade files..."
-    ExecWait '"$PLUGINSDIR\reshade\reshade.exe" --api ${GRAPHICSAPI} --headless "$PLUGINSDIR\reshade\reshade.exe"'
-    Rename "$PLUGINSDIR\reshade\reshade.exe" "$PLUGINSDIR\reshade.exe"
-    
     !insertmacro LogAndPrint "Installing ReShade..."
-	ExecWait '"$PLUGINSDIR\reshade.exe" --api ${GRAPHICSAPI} "$IVPath\GTA5.exe"'
+    ExecWait '"$PLUGINSDIR\reshade\reshade.exe" --api ${GRAPHICSAPI} "$PLUGINSDIR\reshade\reshade.exe"'
+    Delete "$PLUGINSDIR\reshade\${GRAPHICSAPI}.dll"
+    nsisunz::UnzipToLog /file "ReShade64.dll" "$PLUGINSDIR\reshade\reshade.exe" "$PLUGINSDIR\reshade"
+    Rename "$PLUGINSDIR\reshade\ReShade64.dll" "$PLUGINSDIR\reshade\${GRAPHICSAPI}.dll"
+    Delete "$PLUGINSDIR\reshade\reshade.exe"
 
-    ; Get all the file names in $PLUGINSDIR\reshade
+    ; Copy all the files from reshade directory to plugins directory
     FindFirst $R1 $R2 "$PLUGINSDIR\reshade\*.*"
     loop:
-        StrCmp $R2 "" done ; If no more files, we're done
-        IfFileExists "$IVPath\$R2" 0 +4
-            Rename "$IVPath\$R2" "$FiveMPlugins\$R2"
-            !insertmacro LogAndPrint "Moving $R2"
+        StrCmp $R2 "" done
+        CopyFiles "$PLUGINSDIR\reshade\$R2" "$1\$R2"
+        !insertmacro LogAndPrint "Moving $R2"
         FindNext $R1 $R2
         GoTo loop
     done:
         FindClose $R1
 
-    IfFileExists "$IVPath\reshade-shaders\*.*" 0 +2
-        CopyFiles /SILENT "$IVPath\reshade-shaders\*.*" "$FiveMPlugins\reshade-shaders"
-
-    RMDir /r "$IVPath\reshade-shaders"
+    ; Copy reshade-shaders folder if it exists
+    IfFileExists "$PLUGINSDIR\reshade\reshade-shaders\*.*" +2
+        CopyFiles /SILENT "$PLUGINSDIR\reshade\reshade-shaders\*.*" "$1\reshade-shaders"
 SectionEnd

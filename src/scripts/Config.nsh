@@ -4,7 +4,7 @@
 !define NAME "FiveM ReShade"
 !define UNINSTALLER "Uninstall Reshade for FiveM.exe"
 !define UPDATELINK "https://github.com/bituq/FiveRFX"
-!define GRAPHICSAPI "dxgi"
+!define GRAPHICSAPI "d3d11"
 !define HASHSTRINGEXE "..\..\hash_string\target\release\hash_string.exe"
 
 VIProductVersion "${VERSION}.0"
