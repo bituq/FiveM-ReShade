@@ -3,7 +3,7 @@ use std::fs::{self, OpenOptions};
 use std::io::{self, Write, Read};
 use std::path::Path;
 
-// Tries to emulate FiveM's hashing algorithm
+// Tries to copy FiveM's hashing algorithm
 // https://github.com/citizenfx/fivem/blob/master/code/client/shared/Utils.h#L265
 fn hash_string(string: &str) -> u32 {
     let mut hash: u32 = 0;
