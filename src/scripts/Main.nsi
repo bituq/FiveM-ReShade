@@ -22,6 +22,7 @@ Function .onInit
     DetailPrint "$TEMP\$0.log"
 
     ; Locate the FiveM directory
+    Var /GLOBAL FiveMDirectory
     ReadRegStr $0 HKCU "SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\CitizenFX_FiveM" "InstallLocation"
     ${If} $0 == ""
         !insertmacro LogAndPrint "Unable to locate the FiveM directory."
@@ -38,12 +39,7 @@ Section
     SetOutPath $PLUGINSDIR
     File ${HASHSTRINGEXE}
 
-    ; Locate GTA 5
-    ReadINIStr $0 "$0\FiveM.app\CitizenFX.ini" "Game" "IVPath"
-    IfFileExists "$0\*.*" +3
-        !insertmacro LogAndPrint "GTA 5 location: $0"
-    MessageBox MB_ICONSTOP|MB_OK "Unable to locate GTA 5. Please ensure that GTA 5 is installed." /SD IDOK
-    Quit
+    ExecWait '"$PLUGINSDIR\hash_string.exe" "$0\FiveM.app\CitizenFX.ini"'
 
     ; Set the update channel to beta if needed
     ReadINIStr $1 "$0\FiveM.app\CitizenFX.ini" "Game" "UpdateChannel"
@@ -81,6 +77,7 @@ Section
     FindFirst $R1 $R2 "$PLUGINSDIR\reshade\*.*"
     loop:
         StrCmp $R2 "" done
+        StrCmp $R2 "." +3
         CopyFiles "$PLUGINSDIR\reshade\$R2" "$1\$R2"
         !insertmacro LogAndPrint "Moving $R2"
         FindNext $R1 $R2
