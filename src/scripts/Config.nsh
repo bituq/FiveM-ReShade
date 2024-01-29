@@ -1,5 +1,5 @@
 !define RESHADE_VERSION "6.0.1"
-!define VERSION "1.0.2"
+!define VERSION "1.0.3"
 !define MANUFACTURER "Dylan N"
 !define NAME "FiveM ReShade"
 !define UNINSTALLER "Uninstall Reshade for FiveM.exe"
